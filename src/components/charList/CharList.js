@@ -10,25 +10,45 @@ class CharList extends Component{
         list: [],
         loading: true,
         error: false,
+        newItemLoading: false,
+        offset: 1550,
+        charEnded: false
     }
 
     marvelService = new MarvelService();
 
     componentDidMount() {
-        this.updateList();
+        this.onRequest();
     }
 
-    updateList = () => {
+    onRequest = (offset) => {
+        this.onCharListLoading();
         this.marvelService
-            .getAllCharacters()
+            .getAllCharacters(offset)
             .then(this.onListLoaded)
             .catch(this.onError)
     }
-    onListLoaded = (list) => {
+
+    onCharListLoading = () => {
         this.setState({
-            list,
-            loading: false
+            newItemLoading: true
         })
+    }
+
+    onListLoaded = (newList) => {
+        let ended = false;
+        if (newList.length < 9) {
+            ended = true;
+        }
+
+
+        this.setState(({offset, list}) => ({
+            list: [...list, ...newList],
+            loading: false,
+            newItemLoading: false,
+            offset: offset + 9,
+            charEnded: ended
+        }))
     }
     onError = () => {
         this.setState({
@@ -62,7 +82,7 @@ class CharList extends Component{
     }
 
     render() {
-        const {list, loading, error} = this.state;
+        const {list, loading, error, newItemLoading, offset, charEnded} = this.state;
         const items = this.renderItems(list);
         const spinner = loading ? <Spinner /> : null;
         const errorMessage = error ? <ErrorMessage /> : null;
@@ -73,7 +93,11 @@ class CharList extends Component{
                 {spinner}
                 {errorMessage}
                 {content}
-                <button className="button button__main button__long">
+                <button
+                    className="button button__main button__long"
+                    disabled={newItemLoading}
+                    onClick={() => this.onRequest(offset)}
+                    style={{"display": charEnded ? "none" : "block"}}>
                     <div className="inner">load more</div>
                 </button>
             </div>
